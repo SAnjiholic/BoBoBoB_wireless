@@ -88,6 +88,16 @@ struct display_field{
 	string		essid;
 };
 
+struct probe_field{
+	string bssid;
+	string station;
+	int8_t	pwr;
+	string rate;
+	u_int16_t lost;
+	u_int16_t frame;
+	string probe;
+};
+
 class gkrltlfgek{
 	public:
 	string		bssid; // 

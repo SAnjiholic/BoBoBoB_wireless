@@ -35,14 +35,23 @@ int main(int argv, char **argc){
 	struct beacon_frame *bf;
 	struct fixed_parameters *fp;
 	struct tagged_parameters *tp;
+	struct probe_field *pf;
+
 	const u_char *data;
 	char * errbuf;
 	int res;	
 	int k_index = 0;
+	int p_index = 0;
 
 	map< string , struct display_field > airocrack;
 	map< int , string > index;
+
+	map< string , struct probe_field> probecrack;
+	map< int , string > index2;
+
 	vector<struct display_field > vt;
+	vector<struct probe_field > pvt;
+
 	pcap_t *handler = pcap_create(argc[1], errbuf);
 	if (handler == NULL) exit(-1);
 	if(pcap_set_rfmon(handler,13)==0 ) printf("monitor mode enabled\n");
@@ -57,10 +66,10 @@ int main(int argv, char **argc){
 		if(res == 0) continue;
 		rdt = (struct radiotap_header *) data;
 		bf = (struct beacon_frame *) (data + rdt->len);
-		fp = (struct fixed_parameters *) (data + rdt->len + sizeof(*bf));
-		tp = (struct tagged_parameters *) (data + rdt->len + sizeof(*bf) + sizeof(*fp));
 
 		if(bf->frame_field == 0x0080){
+			fp = (struct fixed_parameters *) (data + rdt->len + sizeof(*bf));
+			tp = (struct tagged_parameters *) (data + rdt->len + sizeof(*bf) + sizeof(*fp));
 			string bssid = mac_to_str(bf->bssid);
 
 			if (airocrack.find(bssid) == airocrack.end()){
@@ -104,11 +113,63 @@ int main(int argv, char **argc){
 				airocrack.find(bssid)->second.beacon_count++;
 			}
 		}
+		else if (bf->frame_field == 0x0040 || 0x0050){
+			tp = (struct tagged_parameters *) (data + rdt->len + sizeof(*bf));
+			string bssid = mac_to_str(bf->bssid);
+			string station = "";
+			if (bssid != "ff:ff:ff:ff:ff:ff" && airocrack.find(bssid) != airocrack.end()){
+				struct probe_field tmp_pf;
+				if(bf->frame_field== 0x0040){ 
+					station = mac_to_str(bf->source_addr);
+				}
+				else if (bf->frame_field == 0x0050){
+					station = mac_to_str(bf->destination_addr);
+				}
+				if(probecrack.find(station) == probecrack.end()){ 
+					pvt.push_back(tmp_pf);
+					probecrack.insert(make_pair(station,pvt.back()));
+					probecrack.find(station)->second.bssid = bssid;
+					probecrack.find(station)->second.station = station;
+					probecrack.find(station)->second.pwr = rdt->antenna_signal;
+					probecrack.find(station)->second.lost = 0;
+					probecrack.find(station)->second.frame = 0;
+
+					index2.insert(make_pair(p_index,station));
+					p_index++;
+				}
+			}
+
+		}
+
 		system("clear");
 		printf("%-18s %3s %7s %5s %3s %3s %6s %6s %6s %6s %10s \n","BSSID","PWR","Beacons","#Data","#/s","CH","MB","ENC","CIPHER","AUTH","ESSID");
 		for (int a = 0; a < k_index; a++){
 			if(airocrack.find(index.find(a)->second)->second.essid != "" && airocrack.find(index.find(a)->second)->second.essid[0] >0x29 && int(airocrack.find(index.find(a)->second)->second.beacon_count) > 0){
-				printf("%-18s %3d %7d %5s %3s %3d %6s %6s %6s %6s %10s \n",airocrack.find(index.find(a)->second)->second.bssid.c_str(), int(airocrack.find(index.find(a)->second)->second.pwr), int(airocrack.find(index.find(a)->second)->second.beacon_count),"","",int(airocrack.find(index.find(a)->second)->second.channel),"",airocrack.find(index.find(a)->second)->second.encript.c_str(),airocrack.find(index.find(a)->second)->second.cipher.c_str(),airocrack.find(index.find(a)->second)->second.auth.c_str(),airocrack.find(index.find(a)->second)->second.essid.c_str());
+				printf("%-18s %3d %7d %5s %3s %3d %6s %6s %6s %6s %10s \n",
+						airocrack.find(index.find(a)->second)->second.bssid.c_str(),
+						int(airocrack.find(index.find(a)->second)->second.pwr),
+						int(airocrack.find(index.find(a)->second)->second.beacon_count),
+						"", //#data
+						"", //D/S
+						int(airocrack.find(index.find(a)->second)->second.channel),
+						"", //MB
+						airocrack.find(index.find(a)->second)->second.encript.c_str(),
+						airocrack.find(index.find(a)->second)->second.cipher.c_str(),
+						airocrack.find(index.find(a)->second)->second.auth.c_str(),
+						airocrack.find(index.find(a)->second)->second.essid.c_str());
+			}
+		}
+		printf("\n\n%-18s %-18s %3s %7s %5s %5s %10s \n","BSSID","STATION","PWR","RATE","Lost","Frames","Probe");
+		for(int b = 0; b < p_index; b++){
+			if(probecrack.find(index2.find(b)->second)->second.station != ""){
+				printf("%-18s %-18s %5d %7s %5d %5d %10s \n",
+						probecrack.find(index2.find(b)->second)->second.bssid.c_str(),
+						probecrack.find(index2.find(b)->second)->second.station.c_str(),
+						int(probecrack.find(index2.find(b)->second)->second.pwr),
+						"0", //rate
+						0, //rost
+						0, //frames
+						"Probe"); //probe
 			}
 		}
 		usleep(50000);
