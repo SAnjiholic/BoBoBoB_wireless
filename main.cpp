@@ -77,43 +77,44 @@ int main(int argv, char **argc){
 				vt.push_back(tmp_df);
 				airocrack.insert(make_pair(bssid,vt.back()));
 				index.insert(make_pair(k_index,bssid)); k_index++;
-				airocrack.find(bssid)->second.bssid = bssid;
-				if ((fp->capabilities[0] & 0x10 )!= 0x10 ){ airocrack.find(bssid)->second.encript.append("OPEN");}
-				else { airocrack.find(bssid)->second.encript = "WPA"; }
+				auto df_point = airocrack.find(bssid);
+				df_point->second.bssid = bssid;
+				if ((fp->capabilities[0] & 0x10 )!= 0x10 ){ df_point->second.encript.append("OPEN");}
+				else { df_point->second.encript = "WPA"; }
 				int offset = 0;
 				while (offset < (header->len - rdt->len + sizeof(*bf) + sizeof(*fp)) ){
 					tp = (struct tagged_parameters *) (data + rdt->len + sizeof(*bf) + sizeof(*fp) + offset);
 
 					if(tp->flag == 0 && tp->length != 0 && tp->data[0] > 0x29  && tp->data[0] < 0x5b ){
 						string essid = ssid_to_str(tp->data,int(tp->length));
-						airocrack.find(bssid)->second.essid = essid;
+						df_point->second.essid = essid;
 						offset += (int(tp->length) + 2 );
 					}
 					else if(tp->flag == 0x03){
-						airocrack.find(bssid)->second.channel = tp->data[0];
+						df_point->second.channel = tp->data[0];
 						offset += 3;
 					}
 					else if(tp->flag == 0x30){
-						airocrack.find(bssid)->second.encript = "WPA2";
-						if (int(tp->data[int(tp->length)-3]) == 2) airocrack.find(bssid)->second.auth.append("PSK");
-						if (int(tp->data[int(tp->length)-9]) == 4) airocrack.find(bssid)->second.cipher.append("CCMP");
-						if (int(tp->data[int(tp->length)-9]) == 2) airocrack.find(bssid)->second.cipher.append("TKIP");
+						df_point->second.encript = "WPA2";
+						if (int(tp->data[int(tp->length)-3]) == 2) df_point->second.auth.append("PSK");
+						if (int(tp->data[int(tp->length)-9]) == 4) df_point->second.cipher.append("CCMP");
+						if (int(tp->data[int(tp->length)-9]) == 2) df_point->second.cipher.append("TKIP");
 						offset += int(tp->length)+2;
 					}
 					else {
 						offset += int(tp->length) +2;
 					}
 				}
-				airocrack.find(bssid)->second.bssid = bssid;
-				airocrack.find(bssid)->second.pwr = rdt->antenna_signal;
-				airocrack.find(bssid)->second.beacon_count = 0;
+				df_point->second.bssid = bssid;
+				df_point->second.pwr = rdt->antenna_signal;
+				df_point->second.beacon_count = 0;
 
 			}
 			else{
 				airocrack.find(bssid)->second.beacon_count++;
 			}
 		}
-		else if (bf->frame_field == 0x0040 || 0x0050){
+		else if (bf->frame_field == 0x0040 || 0x0050 || 0x0840 || 0x0850){
 			tp = (struct tagged_parameters *) (data + rdt->len + sizeof(*bf));
 			string bssid = mac_to_str(bf->bssid);
 			string station = "";
@@ -128,11 +129,12 @@ int main(int argv, char **argc){
 				if(probecrack.find(station) == probecrack.end()){ 
 					pvt.push_back(tmp_pf);
 					probecrack.insert(make_pair(station,pvt.back()));
-					probecrack.find(station)->second.bssid = bssid;
-					probecrack.find(station)->second.station = station;
-					probecrack.find(station)->second.pwr = rdt->antenna_signal;
-					probecrack.find(station)->second.lost = 0;
-					probecrack.find(station)->second.frame = 0;
+					auto probe_point = probecrack.find(station)->second;
+					probe_point.bssid = bssid;
+					probe_point.station = station;
+					probe_point.pwr = rdt->antenna_signal;
+					probe_point.lost = 0;
+					probe_point.frame = 0;
 
 					index2.insert(make_pair(p_index,station));
 					p_index++;
@@ -144,28 +146,33 @@ int main(int argv, char **argc){
 		system("clear");
 		printf("%-18s %3s %7s %5s %3s %3s %6s %6s %6s %6s %10s \n","BSSID","PWR","Beacons","#Data","#/s","CH","MB","ENC","CIPHER","AUTH","ESSID");
 		for (int a = 0; a < k_index; a++){
-			if(airocrack.find(index.find(a)->second)->second.essid != "" && airocrack.find(index.find(a)->second)->second.essid[0] >0x29 && int(airocrack.find(index.find(a)->second)->second.beacon_count) > 0){
+			auto beacon_point = airocrack.find(index.find(a)->second)->second;
+			if(beacon_point.essid != ""
+					&& beacon_point.essid[0] >0x29 
+					&& int(beacon_point.beacon_count) > 0){
+
 				printf("%-18s %3d %7d %5s %3s %3d %6s %6s %6s %6s %10s \n",
-						airocrack.find(index.find(a)->second)->second.bssid.c_str(),
-						int(airocrack.find(index.find(a)->second)->second.pwr),
-						int(airocrack.find(index.find(a)->second)->second.beacon_count),
+						beacon_point.bssid.c_str(),
+						int(beacon_point.pwr),
+						int(beacon_point.beacon_count),
 						"", //#data
 						"", //D/S
-						int(airocrack.find(index.find(a)->second)->second.channel),
+						int(beacon_point.channel),
 						"", //MB
-						airocrack.find(index.find(a)->second)->second.encript.c_str(),
-						airocrack.find(index.find(a)->second)->second.cipher.c_str(),
-						airocrack.find(index.find(a)->second)->second.auth.c_str(),
-						airocrack.find(index.find(a)->second)->second.essid.c_str());
+						beacon_point.encript.c_str(),
+						beacon_point.cipher.c_str(),
+						beacon_point.auth.c_str(),
+						beacon_point.essid.c_str());
 			}
 		}
 		printf("\n\n%-18s %-18s %3s %7s %5s %5s %10s \n","BSSID","STATION","PWR","RATE","Lost","Frames","Probe");
 		for(int b = 0; b < p_index; b++){
-			if(probecrack.find(index2.find(b)->second)->second.station != ""){
+			auto probe_point = probecrack.find(index2.find(b)->second)->second;
+			if(probe_point.station != ""){
 				printf("%-18s %-18s %5d %7s %5d %5d %10s \n",
-						probecrack.find(index2.find(b)->second)->second.bssid.c_str(),
-						probecrack.find(index2.find(b)->second)->second.station.c_str(),
-						int(probecrack.find(index2.find(b)->second)->second.pwr),
+						probe_point.bssid.c_str(),
+						probe_point.station.c_str(),
+						int(probe_point.pwr),
 						"0", //rate
 						0, //rost
 						0, //frames
