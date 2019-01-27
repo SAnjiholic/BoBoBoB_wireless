@@ -31,17 +31,6 @@ struct beacon_frame{
 	u_int8_t	bssid[6];
 	u_int16_t	sequence; //12bit
 };
-struct probe_frame{
-	u_int16_t	frame_field;
-	u_int16_t	duration;
-//	u_int8_t	reveiver_addr[6];
-	u_int8_t	destination_addr[6];
-//	u_int8_t	transmitter_addr[6];
-	u_int8_t	source_addr[6];
-	u_int8_t	bssid[6];
-	u_int16_t	sequence; //12bit
-};
-
 
 struct fixed_parameters{
 	u_int64_t	timestamp;
@@ -86,7 +75,7 @@ struct rsn_field24{
 };	
 
 
-struct beacon_field{
+struct display_field{
 	string		bssid;
 	int8_t		pwr;
 	u_int8_t	beacon_count;
