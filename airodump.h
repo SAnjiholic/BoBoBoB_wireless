@@ -41,9 +41,6 @@ class Save_data{
 		map<string,struct probe_field> pmap;
 		vector<struct beacon_field> bv;
 		vector<struct probe_field> pv;
-		//map<string,struct beacon_field>::iterator mapping(string id, struct beacon_field *bd, map<string, struct beacon_field> m1);
-		map<string,struct probe_field>::iterator mapping(string id, struct probe_display *pd, map<string, struct probe_display> m2);
-		//map<string,struct beacon_field>::iterator mapping(string id, struct beacon_field *bd);
 		map<string,struct beacon_field>::iterator b_mapping(string id);
 		map<string,struct probe_field>::iterator p_mapping(string id);
 

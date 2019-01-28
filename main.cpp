@@ -60,7 +60,7 @@ int main(int argv, char **argc){
 	pcap_set_promisc(handler, 0);
 	pcap_set_timeout(handler, 512);
 	pcap_activate(handler);
-	//	thread t1(start_perl);
+	thread t1(start_perl);
 
 	while((res = pcap_next_ex(handler, &header, &data)) >=0){
 		if(res == 0) continue;
