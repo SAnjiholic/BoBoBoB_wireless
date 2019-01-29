@@ -1,3 +1,5 @@
+#include <iostream>
+#include <unistd.h>
 #include "struct.h"
 #include <pcap.h>
 #include <vector>
@@ -35,10 +37,9 @@ class Probe: public CommonHeader{
 
 
 class Save_data{
-	private:
+	public:
 		map<string,struct beacon_field>::iterator bmap_p;
 		map<string,struct probe_field>::iterator pmap_p;
-	public:
 		map<string,struct beacon_field> bmap;
 		map<string,struct probe_field> pmap;
 		vector<struct beacon_field> bv;
@@ -59,4 +60,5 @@ map<string,struct probe_field>::iterator Save_data::p_mapping(string id){
 	this->pmap_p = this->pmap.find(id);
 	return this->pmap_p;
 }
+
 
