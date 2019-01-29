@@ -1,4 +1,5 @@
 #include "airodump.h"
+#include <pcap.h>
 #include <iostream>
 using namespace std;
 
@@ -27,12 +28,12 @@ class Capture{
 		string ssid_to_str(uint8_t data[],int length);
 };		
 
+
 Capture::Capture(char *dev){
 	beacon = new(Beacon);
 	probe = new(Probe);
 	save_data = new(Save_data);
 
-	if(sizeof(dev) == 0 ) cout << "Insert Dev  :( " << endl; 
 	handle = pcap_create(dev,errbuf);
 	if(handle == NULL) exit(-1);
 	if(pcap_set_rfmon(handle,1) == 0 ) cout << "monitor mode enabled" << endl;
@@ -106,14 +107,6 @@ void Capture::parsing_beacon(const u_char *data, int length){
 		save_data->bv.push_back(tmp_bd);
 		auto map = save_data->b_mapping(bssid);
 		map->second.bssid = bssid;
-		int tt = 0;
-		int add = 0;
-		for(int i = 0; i < length ; i++){
-			printf("%02x ", data[i]);
-			tt++;
-			if(tt == 8 ) printf("| ");
-			if(tt == 16){ printf("\n"); tt=0;}
-		}
 
 		if ((beacon->fixed->capabilities[0] & 0x10 )!= 0x10 ){ map->second.encript.append("OPEN");}
 		else { map->second.encript = "WPA"; }
@@ -123,7 +116,6 @@ void Capture::parsing_beacon(const u_char *data, int length){
 		while(offset < (length - (beacon->rh->len + 40))){
 			//beacon->tag = (struct tagged_parameters *) (data + beacon->rh->len + 32 + offset);
 			beacon->tag = (struct tagged_parameters *) (data + beacon->rh->len + sizeof(*(beacon->bf)) + sizeof(*(beacon->fixed)) + offset);
-			//if(beacon->tag->flag == 0 && beacon->tag->length != 0 && beacon->tag->data[0] > 0x29  && beacon->tag->data[0] < 0x5b ){
 			if(beacon->tag->flag == 0 ){
 				map->second.essid = ssid_to_str(beacon->tag->data,int(beacon->tag->length));
 				offset += (int(beacon->tag->length) + 2 );
