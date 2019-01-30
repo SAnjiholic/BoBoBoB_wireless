@@ -29,6 +29,7 @@ class Display{
 								0, //D/S
 								int(bmap_p->second.channel),
 								"", //MB
+								//bmap_p->second.maximum_speed,
 								bmap_p->second.encript.c_str(),
 								bmap_p->second.cipher.c_str(),
 								bmap_p->second.auth.c_str(),

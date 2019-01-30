@@ -112,6 +112,10 @@ void Capture::parsing_probe(const u_char *data){
 			this->pmap_p->second.frame = 0;
 		}
 	}
+	else {
+		this->pmap_p->second.pwr = probe->rh->antenna_signal;
+		this->pmap_p->second.frame ++;
+	}
 }
 
 
@@ -138,7 +142,12 @@ void Capture::parsing_beacon(const u_char *data, int length){
 				bmap_p->second.essid = ssid_to_str(beacon->tag->data,int(beacon->tag->length));
 				offset += (int(beacon->tag->length) + 2 );
 			}
-
+			/*else if(beacon->tag->flag == 0x01){
+//				u_char a = (beacon->tag->data[(int(beacon->tag->length)) - 1]) / 2;
+//				bmap_p->second.maximum_speed = a > 54 ? 54 : a;
+				offset += int(beacon->tag->length) + 2; 
+			}
+*/
 			else if(beacon->tag->flag == 0x03){
 				bmap_p->second.channel = beacon->tag->data[0];
 				offset += 3;
