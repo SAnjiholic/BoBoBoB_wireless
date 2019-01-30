@@ -1,3 +1,4 @@
+all : osx_airodump
 osx_airodump : osx_airodump.o
 	g++  -o osx_airodump osx_airodump.o -lpcap -std=c++11
 	rm osx_airodump.o

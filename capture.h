@@ -16,12 +16,12 @@ class Capture : public Save_data{
 		int typecheck(const u_char *data);
 		void parsing_beacon(const u_char *data, int length);
 		void parsing_probe(const u_char *data);
+		void parsing_data (const u_char *data);
 
 	public:
 		Capture();
 		Capture(char *dev);
 		~Capture();
-		void display();
 		void start();
 		string char_to_string(u_int8_t mac[]);
 		string ssid_to_str(uint8_t data[],int length);
@@ -42,12 +42,17 @@ Capture::Capture(char *dev){
 	pcap_activate(handle);
 }
 
+Capture::~Capture(){
+	delete beacon;
+	delete probe;
+}
 
 void Capture::start(){
 	while ((pcap_check = pcap_next_ex(handle,&header,&data)) >= 0 ){
 		if(pcap_check == 0) continue;
 		//rdt = (struct radiotap_header *) data;
 		int type = typecheck(data);
+//		cout << "type : " << type <<endl;
 
 		switch(type) {
 			case 1:{  	// beacon
@@ -59,12 +64,27 @@ void Capture::start(){
 					   break;
 				   }
 			case 3: {	// Data
+						Capture::parsing_data(data);
 						break;
 					}
 		}
 	}
 }
+void Capture::parsing_data(const u_char *data){
+	u_int16_t *length = (u_int16_t *) (data+2);
+	struct three_mac *mac = (struct three_mac *) (data+*length);
+
+	string m1 = char_to_string(mac->mac1);
+	string m2 = char_to_string(mac->mac2);
+	string m3 = char_to_string(mac->mac3);
+
+	if(this->bmap.find(m1) != this->bmap.end()) this->bmap.find(m1)->second.data++;
+	if(this->bmap.find(m2) != this->bmap.end()) this->bmap.find(m2)->second.data++;
+	if(this->bmap.find(m3) != this->bmap.end()) this->bmap.find(m3)->second.data++;
+}
+
 void Capture::parsing_probe(const u_char *data){
+//	cout << "probe start " <<endl;
 	probe->rh = (struct radiotap_header *) data;
 	probe->pf = (struct probe_frame *) (data + probe->rh->len);
 	probe->fixed = (struct fixed_parameters *) (data + probe->rh->len + 24);
@@ -73,6 +93,7 @@ void Capture::parsing_probe(const u_char *data){
 	string station = "";
 
 	if (bssid != "ff:ff:ff:ff:ff:ff" && this->bmap.find(bssid) != this->bmap.end()){
+//		cout << "if start " << endl;
 		struct probe_field tmp_pf;
 		//						   probe->pd = &tmp_pf;
 		if(probe->pf->frame_field == 0x0040){
@@ -83,7 +104,6 @@ void Capture::parsing_probe(const u_char *data){
 		}
 		if(this->pmap.find(station) == this->pmap.end()){
 			this->pv.push_back(tmp_pf);
-
 			this->pmap_p = this->p_mapping(station);
 			this->pmap_p->second.bssid = bssid;
 			this->pmap_p->second.station = station;
@@ -136,6 +156,7 @@ void Capture::parsing_beacon(const u_char *data, int length){
 		bmap_p->second.bssid = bssid;
 		bmap_p->second.pwr = beacon->rh->antenna_signal;
 		bmap_p->second.beacon_count = 0;
+		bmap_p->second.data = 0;
 	}
 	else{
 		this->bmap.find(bssid)->second.beacon_count++;
@@ -150,8 +171,10 @@ int Capture::typecheck(const u_char *data){
 	u_int16_t *length = (u_int16_t *) (data + 2);
 	u_int8_t *type = (u_int8_t *) (data + *length);
 	u_int8_t *flag = (u_int8_t *) (data + *length + 1);
-	if (int(*type) == 80) return 1; // 2 = Probe
-	if (int(*type) == 40 || int(*type) == 50) return 2; // 1 = Probe
+	//cout << "type : " << int(*type) << endl;
+	if (int(*type) == 0x80) return 1; // 2 = Probe
+	if (int(*type) == 0x40 || int(*type) == 0x50) return 2; // 1 = Probe
+	if (int(*type) == 0x88 || int(*type) == 0x08) return 3;
 	return 0;
 }
 string Capture::char_to_string(u_int8_t mac[]){
@@ -160,7 +183,7 @@ string Capture::char_to_string(u_int8_t mac[]){
 	return test;
 }
 
-string Capture::ssid_to_str(uint8_t data[],int length){
+string Capture::ssid_to_str(u_int8_t data[],int length){
 	string ret = "";
 	char tmp[32] = {0,};
 	if(length > 32 ) length = 30;

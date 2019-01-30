@@ -10,7 +10,8 @@ struct radiotap_header{
 	u_int8_t 	version;     /* set to 0 */
     u_int8_t 	pad;
 	u_int16_t 	len;         /* entire length */
-	u_int32_t	present;     /* fields present */
+	//u_int32_t	present;     /* fields present */
+	u_int8_t present[4];
 	u_int64_t	timestamp;
 	u_int8_t	flags;
 	u_int8_t	rate; // 500 * x
@@ -40,6 +41,12 @@ struct probe_frame{
 	u_int8_t	source_addr[6];
 	u_int8_t	bssid[6];
 	u_int16_t	sequence; //12bit
+};
+
+struct three_mac{
+	u_int8_t mac1[6];
+	u_int8_t mac2[6];
+	u_int8_t mac3[6];
 };
 
 
@@ -89,8 +96,8 @@ struct rsn_field24{
 struct beacon_field{
 	string		bssid;
 	int8_t		pwr;
-	u_int8_t	beacon_count;
-	int8_t		data;
+	u_int32_t	beacon_count;
+	u_int32_t		data;
 	int8_t		data_per_second;
 	u_int8_t	channel;
 	u_int8_t	maximum_speed;
