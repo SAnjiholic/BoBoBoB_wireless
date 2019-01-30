@@ -110,6 +110,7 @@ void Capture::parsing_probe(const u_char *data){
 			this->pmap_p->second.pwr = probe->rh->antenna_signal;
 			this->pmap_p->second.lost = 0;
 			this->pmap_p->second.frame = 0;
+			this->pmap_p->second.probe = bmap.find(bssid)->second.essid;
 		}
 	}
 	else {

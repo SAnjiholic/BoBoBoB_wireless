@@ -47,7 +47,8 @@ class Display{
 								"0", //rate
 								0, //rost
 								0, //frames
-								"Probe"); //probe
+								//"Probe"
+								pmap_p->second.probe.c_str()); //probe
 					}
 					if( i == 20 ) break;
 					i++;
